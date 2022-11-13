@@ -109,7 +109,7 @@ export const HomePage = () => {
     //render in case of no data
     if (!financialData) {
         return (
-            <div className="flex flex-col justify-center items-center gap-3">
+            <div className="flex flex-col justify-center items-center gap-3 pt-40">
                 <p className="text-white text-center">Loading data...</p>
                 <img className="w-2/12 sm:w-1/12 rounded-lg" src="https://financas-e-fundamentos.s3.sa-east-1.amazonaws.com/loading.gif" alt="An animation, showing the chart is being loaded." />
             </div>
