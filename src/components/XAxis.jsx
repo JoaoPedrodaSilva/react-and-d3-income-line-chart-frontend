@@ -6,9 +6,9 @@ export const XAxis = ({ xScale, innerHeight }) => (
                 y2={innerHeight}
             />
             <text
-                style={{ textAnchor: "middle", fill: "white" }}
+                style={{ textAnchor: "middle", fill: "white", fontSize: "0.6rem" }}
                 y={innerHeight}
-                dy="1.5rem"
+                dy="1rem"
             >
                 {(tick)}
             </text>

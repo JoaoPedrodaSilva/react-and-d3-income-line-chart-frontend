@@ -4,52 +4,21 @@ import { useEffect, useState } from "react"
 
 import { XAxis } from "../components/XAxis"
 import { YAxis } from "../components/YAxis"
+import { Marks } from "../components/Marks"
+import { ColorLegend } from "../components/ColorLegend"
 
 export const HomePage = () => {
 
     //declaring states and variables 
     const [financialData, setFinancialData] = useState(null)
+    const [selectedChart, setSelectedChart] = useState('income')
     const [yAccessors, setYAccessors] = useState(null)
     const [xAccessor] = useState(() => d => d.year)
     const svgWidth = 300
     const svgHeight = 300
-    const margin = { top: 40, right: 60, bottom: 80, left: 30 }
+    const margin = { top: 15, right: 20, bottom: 65, left: 15 }
     const innerWidth = svgWidth - margin.right - margin.left
     const innerHeight = svgHeight - margin.top - margin.bottom
-
-
-    //fetching data and setting Y Accessors
-    useEffect(() => {
-        const getFinancialData = async () => {
-            try {
-                const response = await axios.get("/api")                
-                setFinancialData(response.data.financial_data)                
-            } catch (error) {
-                console.log(error)
-            }
-        }
-        getFinancialData()
-        setYAccessors([
-            {
-                accessor: d => d.net_revenue,
-                color: "#d6d6ff",
-                legend: "Net Revenue",
-                isVisible: false
-            },
-            {
-                accessor: d => d.operating_income,
-                color: "#4747ff",
-                legend: "Operating Income",
-                isVisible: true
-            },
-            {
-                accessor: d => d.net_income,
-                color: "#000066",
-                legend: "Net Income",
-                isVisible: true
-            }
-        ])
-    }, [])
 
 
     //declaring functions
@@ -58,7 +27,7 @@ export const HomePage = () => {
         // eslint-disable-next-line
         financialData.map(yearOfData => {
             // eslint-disable-next-line
-            yAccessors.map(yAccessor => {                
+            yAccessors.map(yAccessor => {
                 if (yAccessor.isVisible) {
                     tempVisibleAccessors.push(yAccessor.accessor(yearOfData))
                 }
@@ -66,7 +35,76 @@ export const HomePage = () => {
         })
         return Math.max(...tempVisibleAccessors)
     }
+    const getOperatingMargin = (financialData) => {
+        return Math.floor(financialData.operating_income / financialData.net_revenue * 100)
+    }
+    const getNetMargin = (financialData) => {
+        return Math.floor(financialData.net_income / financialData.net_revenue * 100)
+    }
+    const refreshChartType = () => {
+        if (selectedChart === 'income') {
+            // setChartTitle('Income')
+            // setYAccessorTickFormat(() => format(","))
+        } else if (selectedChart === 'margins') {
+            // setChartTitle('Margins')
+            // setYAccessorTickFormat(() => format(".1f"))
+        }
+    }
+    const refreshYAccessors = () => {        
+        if (selectedChart === 'income') {
+            setYAccessors([
+                {
+                    accessor: d => d.net_revenue,
+                    color: "#d6d6ff",
+                    legend: "Net Revenue",
+                    isVisible: false
+                },
+                {
+                    accessor: d => d.operating_income,
+                    color: "#4747ff",
+                    legend: "Oper. Income",
+                    isVisible: true
+                },
+                {
+                    accessor: d => d.net_income,
+                    color: "#000066",
+                    legend: "Net Income",
+                    isVisible: true
+                }
+            ])
+        } else if (selectedChart === 'margins') {
+            setYAccessors([
+                {
+                    accessor: d => getOperatingMargin(d),
+                    color: "#d6d6ff",
+                    legend: "Oper. Margin",
+                    isVisible: true
+                },
+                {
+                    accessor: d => getNetMargin(d),
+                    color: "#4747ff",
+                    legend: "Net Margin",
+                    isVisible: true
+                }
+            ])
+        }
+    }
 
+
+    //fetching data and setting YAccessors and Chart Type
+    useEffect(() => {
+        const getFinancialData = async () => {
+            try {
+                const response = await axios.get("/api")
+                setFinancialData(response.data.financial_data)
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        getFinancialData()
+        refreshYAccessors()
+        refreshChartType()
+    }, [selectedChart])
 
     //render in case of no data
     if (!financialData) {
@@ -92,24 +130,53 @@ export const HomePage = () => {
 
 
     return (
-        <svg
-            preserveAspectRatio="xMinYMin meet"
-            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-        >
-            <g transform={`translate(${margin.left}, ${margin.top})`}>
-                
-                <XAxis
-                    xScale={xScale}
-                    innerHeight={innerHeight}
-                /> 
+        <>
+            <select
+                className="shadow mx-auto text-center text-xs xs:text-base rounded px-1 mt-2 text-gray-700 focus:outline-none focus:shadow-outline"
+                onChange={event => setSelectedChart(event.target.value)}
+            >
+                {financialData &&
+                    <>
+                        <option value="income">Income (U$)</option>
+                        <option value="margins">Margins (%)</option>
+                    </>
+                }
+            </select>
 
-                <YAxis
-                    yScale={yScale}
-                    innerWidth={innerWidth}
-                    tickFormat={format(",")}
-                /> 
+            <svg
+                preserveAspectRatio="xMinYMin meet"
+                viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+            >
+                <g transform={`translate(${margin.left}, ${margin.top})`}>
+                    <XAxis
+                        xScale={xScale}
+                        innerHeight={innerHeight}
+                    />
 
-            </g>
-        </svg>
+                    <YAxis
+                        yScale={yScale}
+                        innerWidth={innerWidth}
+                        tickFormat={format(",")}
+                    />
+
+                    <Marks
+                        financialData={financialData}
+                        selectedChart={selectedChart}
+
+                        xAccessor={xAccessor}
+                        xScale={xScale}
+
+                        yScale={yScale}
+                        yAccessors={yAccessors}
+                        yAccessorTickFormat={format(",")}
+                    />
+
+                    <ColorLegend
+                        yAccessors={yAccessors}
+                        setYAccessors={setYAccessors}
+                    />
+                </g>
+            </svg>
+        </>
     )
 }
