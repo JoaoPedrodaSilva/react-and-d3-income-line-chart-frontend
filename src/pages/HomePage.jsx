@@ -1,5 +1,5 @@
 import axios from "../axios"
-import { scaleLinear, extent, format, tickFormat } from "d3"
+import { scaleLinear, extent, format } from "d3"
 import { useEffect, useState } from "react"
 
 import { XAxis } from "../components/XAxis"
@@ -13,9 +13,9 @@ export const HomePage = () => {
     const [financialData, setFinancialData] = useState(null)
     const [selectedChart, setSelectedChart] = useState('income')
     const [yAccessors, setYAccessors] = useState(null)
-    const [xAccessor] = useState(() => d => d.year)
-    const svgWidth = 300
-    const svgHeight = 300
+    const xAccessor = d => d.year
+    const svgWidth = 280
+    const svgHeight = 350
     const margin = { top: 15, right: 20, bottom: 65, left: 15 }
     const innerWidth = svgWidth - margin.right - margin.left
     const innerHeight = svgHeight - margin.top - margin.bottom
@@ -24,9 +24,7 @@ export const HomePage = () => {
     //declaring functions
     const getYDomainMaxValue = (financialData, yAccessors) => {
         const tempVisibleAccessors = []
-        // eslint-disable-next-line
         financialData.map(yearOfData => {
-            // eslint-disable-next-line
             yAccessors.map(yAccessor => {
                 if (yAccessor.isVisible) {
                     tempVisibleAccessors.push(yAccessor.accessor(yearOfData))
@@ -50,7 +48,7 @@ export const HomePage = () => {
             // setYAccessorTickFormat(() => format(".1f"))
         }
     }
-    const refreshYAccessors = () => {        
+    const refreshYAccessors = () => {
         if (selectedChart === 'income') {
             setYAccessors([
                 {
@@ -106,6 +104,7 @@ export const HomePage = () => {
         refreshChartType()
     }, [selectedChart])
 
+
     //render in case of no data
     if (!financialData) {
         return (
@@ -129,54 +128,62 @@ export const HomePage = () => {
         .nice()
 
 
+    
+
+
     return (
         <>
-            <select
-                className="shadow mx-auto text-center text-xs xs:text-base rounded px-1 mt-2 text-gray-700 focus:outline-none focus:shadow-outline"
-                onChange={event => setSelectedChart(event.target.value)}
-            >
-                {financialData &&
-                    <>
-                        <option value="income">Income (U$)</option>
-                        <option value="margins">Margins (%)</option>
-                    </>
-                }
-            </select>
+            {financialData &&
+                <>
+                    <select
+                        className="shadow mx-auto text-center text-xs xs:text-base rounded px-1 mt-2 text-gray-700 focus:outline-none focus:shadow-outline"
+                        onChange={event => setSelectedChart(event.target.value)}
+                    >
+                        {financialData &&
+                            <>
+                                <option value="income">Income (U$)</option>
+                                <option value="margins">Margins (%)</option>
+                            </>
+                        }
+                    </select>
 
-            <svg
-                preserveAspectRatio="xMinYMin meet"
-                viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-            >
-                <g transform={`translate(${margin.left}, ${margin.top})`}>
-                    <XAxis
-                        xScale={xScale}
-                        innerHeight={innerHeight}
-                    />
 
-                    <YAxis
-                        yScale={yScale}
-                        innerWidth={innerWidth}
-                        tickFormat={format(",")}
-                    />
+                    <svg
+                        preserveAspectRatio="xMinYMin meet"
+                        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                    >
+                        <g transform={`translate(${margin.left}, ${margin.top})`}>
+                            <XAxis
+                                xScale={xScale}
+                                innerHeight={innerHeight}
+                            />
 
-                    <Marks
-                        financialData={financialData}
-                        selectedChart={selectedChart}
+                            <YAxis
+                                yScale={yScale}
+                                innerWidth={innerWidth}
+                                tickFormat={format(",")}
+                            />
 
-                        xAccessor={xAccessor}
-                        xScale={xScale}
+                            <Marks
+                                financialData={financialData}
+                                selectedChart={selectedChart}
 
-                        yScale={yScale}
-                        yAccessors={yAccessors}
-                        yAccessorTickFormat={format(",")}
-                    />
+                                xAccessor={xAccessor}
+                                xScale={xScale}
+
+                                yScale={yScale}
+                                yAccessors={yAccessors}
+                                yAccessorTickFormat={format(",")}
+                            />
+                        </g>
+                    </svg>
 
                     <ColorLegend
                         yAccessors={yAccessors}
                         setYAccessors={setYAccessors}
                     />
-                </g>
-            </svg>
+                </>
+            }
         </>
     )
 }
