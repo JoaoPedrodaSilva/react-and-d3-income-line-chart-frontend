@@ -20,24 +20,27 @@ export const ColorLegend = ({ yAccessors, setYAccessors }) => {
     }
 
     return (
-        <div className="flex text-xs justify-around">
+        <div className="w-full flex text-[0.6rem] xs:text-xs justify-around">
             {yAccessors.map((yAccessor, index) => (
                 <div
                     key={index}
-                    style={yAccessor.isVisible ? { cursor: "pointer", opacity: "1" } : { cursor: "pointer", opacity: "0.3" }}
+                    className={`flex items-center justify-center gap-2 cursor-pointer rounded-md p-1 px-3 ${yAccessor.isVisible ? "opacity-100" : "opacity-30"} ${index === 0 ? "text-black" : "text-white"}`}
                     onClick={() => toggleAccessorVisibility(yAccessor)}
+                    style={{ backgroundColor: yAccessor.color }}
                 >
-                    {yAccessor.isVisible ? (
-                        <div className={`flex ${index === 0 ? "text-black" : "text-white"}`}>
-                            <AiFillEye />
-                            <p>{yAccessor.legend}</p>
-                        </div>
-                    ) : (
-                        <div className={`flex ${index === 0 ? "text-black" : "text-white"}`}>
-                            <AiFillEyeInvisible />
-                            <p>{yAccessor.legend}</p>
-                        </div>
-                    )}
+                    <div className={`flex items-center gap-1 ${index === 0 ? "text-black" : "text-white"}`}>
+                        {yAccessor.isVisible ? (
+                            <>
+                                <AiFillEye />
+                                <p>{yAccessor.legend}</p>
+                            </>
+                        ) : (
+                            <>
+                                <AiFillEyeInvisible />
+                                <p>{yAccessor.legend}</p>
+                            </>
+                        )}
+                    </div>
                 </div>
             ))}
         </div>

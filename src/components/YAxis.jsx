@@ -1,6 +1,6 @@
 export const YAxis = ({ yScale, innerWidth, tickFormat }) => (
 
-    yScale.ticks().map((tick, index) => (
+    yScale.ticks(8).map((tick, index) => (
         <g key={index} transform={`translate(${innerWidth}, ${yScale(tick)})`}>
             <line
                 style={{ stroke: "#373737" }}

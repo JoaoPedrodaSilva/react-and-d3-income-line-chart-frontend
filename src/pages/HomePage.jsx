@@ -6,19 +6,50 @@ import { XAxis } from "../components/XAxis"
 import { YAxis } from "../components/YAxis"
 import { Marks } from "../components/Marks"
 import { ColorLegend } from "../components/ColorLegend"
+import { Tooltip } from "../components/Tooltip"
 
 export const HomePage = () => {
 
-    //declaring states and variables 
+    //declaring states and variables     
+    const [chartSettings, setChartSettings] = useState({
+        selectedChart: "income",
+        chartType: "line",
+        yAccessorsFormat: {
+            yAxis: () => format("$,.0f"),
+            tooltip: () => format("$,.2f")
+        }
+    })
+    const [tooltipSettings, setTooltipSettings] = useState({
+        isVisible: false,
+        year: null,
+        yAcessors: []
+    })
     const [financialData, setFinancialData] = useState(null)
-    const [selectedChart, setSelectedChart] = useState('income')
     const [yAccessors, setYAccessors] = useState(null)
     const xAccessor = d => d.year
     const svgWidth = 280
-    const svgHeight = 350
-    const margin = { top: 15, right: 20, bottom: 65, left: 15 }
+    const svgHeight = 280
+
+    let margin
+    if (chartSettings.selectedChart === "income") {
+        margin = {
+            top: 10,
+            right: 45,
+            bottom: 30,
+            left: 15
+        }
+    } else if (chartSettings.selectedChart === "margins") {
+        margin = {
+            top: 10,
+            right: 30,
+            bottom: 30,
+            left: 15
+        }
+    }
+
     const innerWidth = svgWidth - margin.right - margin.left
     const innerHeight = svgHeight - margin.top - margin.bottom
+    const barWidth = financialData && innerWidth / financialData.length * 0.7
 
 
     //declaring functions
@@ -34,28 +65,19 @@ export const HomePage = () => {
         return Math.max(...tempVisibleAccessors)
     }
     const getOperatingMargin = (financialData) => {
-        return Math.floor(financialData.operating_income / financialData.net_revenue * 100)
+        return financialData.operating_income / financialData.net_revenue
     }
     const getNetMargin = (financialData) => {
-        return Math.floor(financialData.net_income / financialData.net_revenue * 100)
-    }
-    const refreshChartType = () => {
-        if (selectedChart === 'income') {
-            // setChartTitle('Income')
-            // setYAccessorTickFormat(() => format(","))
-        } else if (selectedChart === 'margins') {
-            // setChartTitle('Margins')
-            // setYAccessorTickFormat(() => format(".1f"))
-        }
+        return financialData.net_income / financialData.net_revenue
     }
     const refreshYAccessors = () => {
-        if (selectedChart === 'income') {
+        if (chartSettings.selectedChart === 'income') {
             setYAccessors([
                 {
                     accessor: d => d.net_revenue,
-                    color: "#d6d6ff",
+                    color: "#d6ddff",
                     legend: "Net Revenue",
-                    isVisible: false
+                    isVisible: true
                 },
                 {
                     accessor: d => d.operating_income,
@@ -70,7 +92,7 @@ export const HomePage = () => {
                     isVisible: true
                 }
             ])
-        } else if (selectedChart === 'margins') {
+        } else if (chartSettings.selectedChart === 'margins') {
             setYAccessors([
                 {
                     accessor: d => getOperatingMargin(d),
@@ -89,7 +111,7 @@ export const HomePage = () => {
     }
 
 
-    //fetching data and setting YAccessors and Chart Type
+    //fetching data and setting YAccessors    
     useEffect(() => {
         const getFinancialData = async () => {
             try {
@@ -100,9 +122,8 @@ export const HomePage = () => {
             }
         }
         getFinancialData()
-        refreshYAccessors()
-        refreshChartType()
-    }, [selectedChart])
+    }, [])
+    useEffect(() => refreshYAccessors(), [chartSettings.selectedChart])
 
 
     //render in case of no data
@@ -117,10 +138,19 @@ export const HomePage = () => {
 
 
     //declaring scales
-    const xScale = scaleLinear()
-        .domain(extent(financialData, xAccessor))
-        .range([0, innerWidth])
-        .nice()
+    let xScale
+    if (chartSettings.chartType === "line") {
+        xScale = scaleLinear()
+            .domain(extent(financialData, xAccessor))
+            .range([0, innerWidth])
+            .nice()
+    } else if (chartSettings.chartType === "bar") {
+        xScale = scaleLinear()
+            .domain(extent(financialData, xAccessor))
+            .range([barWidth / 2, innerWidth - barWidth / 2])
+            .nice()
+    }
+
 
     const yScale = scaleLinear()
         .domain([0, getYDomainMaxValue(financialData, yAccessors)])
@@ -128,16 +158,34 @@ export const HomePage = () => {
         .nice()
 
 
-    
-
-
     return (
-        <>
+        <section className="relative flex flex-col items-center text-xs">
             {financialData &&
                 <>
                     <select
                         className="shadow mx-auto text-center text-xs xs:text-base rounded px-1 mt-2 text-gray-700 focus:outline-none focus:shadow-outline"
-                        onChange={event => setSelectedChart(event.target.value)}
+                        onChange={event => setChartSettings(prevChartSettings => {
+                            if (event.target.value === "income") {
+                                return ({
+                                    ...prevChartSettings,
+                                    yAccessorsFormat: {
+                                        yAxis: () => format("$,.0f"),
+                                        tooltip: () => format("$,.2f")
+                                    },
+                                    selectedChart: event.target.value
+                                })
+                            } else if (event.target.value === "margins") {
+                                return ({
+                                    ...prevChartSettings,
+                                    yAccessorsFormat: {
+                                        yAxis: () => format(",.0%"),
+                                        tooltip: () => format(",.2%")
+                                    },
+                                    selectedChart: event.target.value
+                                })
+                            }
+                            
+                        })}
                     >
                         {financialData &&
                             <>
@@ -146,6 +194,31 @@ export const HomePage = () => {
                             </>
                         }
                     </select>
+
+
+                    <div className="flex justify-center items-center gap-8 text-xs xs:text-sm text-white mt-2">
+                        <div className="flex items-center gap-1">
+                            <label htmlFor="line-chart-radio">Line Chart</label>
+                            <input
+                                id="line-chart-radio"
+                                type="radio"
+                                name="type-chart"
+                                value="line"
+                                onChange={event => setChartSettings(prevChartSettings => ({ ...prevChartSettings, chartType: event.target.value }))}
+                                checked={chartSettings.chartType === "line"}
+                            />
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <label htmlFor="bar-chart-radio">Bar Chart</label>
+                            <input
+                                id="bar-chart-radio"
+                                type="radio"
+                                name="type-chart"
+                                value="bar"
+                                onChange={event => setChartSettings(prevChartSettings => ({ ...prevChartSettings, chartType: event.target.value }))}
+                            />
+                        </div>
+                    </div>
 
 
                     <svg
@@ -161,19 +234,21 @@ export const HomePage = () => {
                             <YAxis
                                 yScale={yScale}
                                 innerWidth={innerWidth}
-                                tickFormat={format(",")}
+                                tickFormat={chartSettings.yAccessorsFormat.yAxis()}
                             />
 
                             <Marks
                                 financialData={financialData}
-                                selectedChart={selectedChart}
+                                chartType={chartSettings.chartType}
+                                barWidth={barWidth}
+                                innerHeight={innerHeight}
+                                setTooltipSettings={setTooltipSettings}
 
                                 xAccessor={xAccessor}
                                 xScale={xScale}
 
                                 yScale={yScale}
                                 yAccessors={yAccessors}
-                                yAccessorTickFormat={format(",")}
                             />
                         </g>
                     </svg>
@@ -182,8 +257,15 @@ export const HomePage = () => {
                         yAccessors={yAccessors}
                         setYAccessors={setYAccessors}
                     />
+
+                    {tooltipSettings.isVisible &&
+                        <Tooltip
+                            tooltipSettings={tooltipSettings}
+                            tickFormat={chartSettings.yAccessorsFormat.tooltip()}
+                        />
+                    }
                 </>
             }
-        </>
+        </section>
     )
 }
